@@ -8,13 +8,15 @@
 
 int argtop;
 
+void getarg(int t);
+
 /**
  * begin a function
  * called from "parse", this routine tries to make a function out
  * of what follows
  * modified version.  p.l. woods
  */
-newfunc() {
+void newfunc() {
     char n[NAMESIZE];
     int idx, type;
     fexitlab = getlabel();
@@ -93,7 +95,7 @@ newfunc() {
  * @param t argument type (char, int)
  * @return
  */
-getarg(int t) {
+void getarg(int t) {
     int j, legalname, address, argptr, otag;
     char n[NAMESIZE];
 

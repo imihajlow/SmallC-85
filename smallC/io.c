@@ -8,6 +8,10 @@
 #include "defs.h"
 #include "data.h"
 
+void outfname(char *s);
+void fixname(char *s);
+void kill(void);
+void pl(char*);
 /*
  *      open input file
  */
@@ -44,7 +48,7 @@ openout ()
 /*
  *      change input filename to output filename
  */
-outfname (s)
+void outfname (s)
 char    *s;
 {
         while (*s)
@@ -56,7 +60,7 @@ char    *s;
 /**
  * remove NL from filenames
  */
-fixname (s)
+void fixname (s)
 char    *s;
 {
         while (*s && *s++ != LF);
@@ -81,12 +85,12 @@ char    *s;
 
 }
 
-kill () {
+void kill () {
         lptr = 0;
         line[lptr] = 0;
 }
 
-readline () {
+void readline () {
         int     k;
         FILE    *unit;
 
@@ -171,7 +175,7 @@ ch () {
  *      print a carriage return and a string only to console
  *
  */
-pl (str)
+void pl (str)
 char    *str;
 {
         int     k;

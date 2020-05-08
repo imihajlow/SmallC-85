@@ -24,7 +24,7 @@ declare_global(int type, int storage, TAG_SYMBOL *mtag, int otag, int is_struct)
     FOREVER {
         FOREVER {
             if (endst ())
-                return;
+                return 0;
             dim = 1;
             if (match ("*")) {
                 identity = POINTER;
@@ -72,7 +72,7 @@ declare_global(int type, int storage, TAG_SYMBOL *mtag, int otag, int is_struct)
             }
         }
         if (!match (","))
-            return;
+            return 0;
     }
 }
 
@@ -205,7 +205,7 @@ declare_local(int typ, int stclass, int otag) {
     FOREVER {
         FOREVER {
             if (endst())
-                return;
+                return 0;
             if (match("*"))
                 j = POINTER;
             else
@@ -261,7 +261,7 @@ declare_local(int typ, int stclass, int otag) {
             break;
         }
         if (!match(","))
-            return;
+            return 0;
     }
 }
 

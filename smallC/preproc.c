@@ -100,7 +100,7 @@ doundef ()
         if (!symname(sname)) {
                 illname();
                 kill();
-                return;
+                return 0;
         }
 
         if (mp = findmac(sname))
@@ -111,7 +111,7 @@ doundef ()
 
 preprocess ()
 {
-        if (ifline()) return;
+        if (ifline()) return 0;
         while (cpp());
 }
 
@@ -123,7 +123,7 @@ int ifdef;
 
         blanks();
         ++iflevel;
-        if (skiplevel) return;
+        if (skiplevel) return 0;
         k = symname(sname) && findmac(sname);
         if (k != ifdef) skiplevel = iflevel;
 
@@ -296,7 +296,7 @@ addmac ()
         if (!symname (sname)) {
                 illname ();
                 kill ();
-                return;
+                return 0;
         }
         if (mp = findmac(sname)) {
                 error("Duplicate define");

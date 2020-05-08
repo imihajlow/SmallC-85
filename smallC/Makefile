@@ -10,7 +10,7 @@ TARGDIR = /home/notebook/Public/work/smallCextended/lib
 INCDIR = "./include/"
 
 INSTFLAGS = -DINCDIR=$(INCDIR)
-   CFLAGS = '$(INSTFLAGS)' -ggdb -g
+   CFLAGS = '$(INSTFLAGS)' -ggdb -g -std=c89
 
 ifdef SystemRoot
    # windows

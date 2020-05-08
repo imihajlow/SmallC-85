@@ -149,7 +149,7 @@ do_compound(int func) {
         ncmp++;
         while (!match ("}")) {
                 if (feof (input))
-                        return;
+                        return 0;
                 if (decls) {
                         if (!statement_declare ())
                                 decls = NO;
@@ -175,7 +175,7 @@ doif() {
         local_table_index = flev;
         if (!amatch ("else", 4)) {
                 generate_label (flab1);
-                return;
+                return 0;
         }
         gen_jump (flab2 = getlabel ());
         generate_label (flab1);
@@ -224,7 +224,7 @@ dodo() {
         statement (NO);
         if (!match ("while")) {
                 error ("missing while");
-                return;
+                return 0;
         }
         generate_label (ws.case_test);
         test (ws.body_tab, TRUE);
@@ -363,7 +363,7 @@ dobreak() {
         WHILE *ptr;
 
         if ((ptr = readwhile ()) == 0)
-                return;
+                return 0;
         gen_modify_stack (ptr->stack_pointer);
         gen_jump (ptr->while_exit);
 }
@@ -375,7 +375,7 @@ docont() {
         WHILE *ptr; /*int     *ptr; */
 
         if ((ptr = findwhile ()) == 0)
-                return;
+                return 0;
         gen_modify_stack (ptr->stack_pointer);
         if (ptr->type == WSFOR)
                 gen_jump (ptr->incr_def);

@@ -14,7 +14,7 @@ addwhile (WHILE *ptr) {
     if (wsptr == WSMAX) { */
     if (while_table_index == WSTABSZ) {
         error ("too many active whiles");
-        return;
+        return 0;
     }
     /*k = 0;
     while (k < WSSIZ)

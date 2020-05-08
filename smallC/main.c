@@ -80,7 +80,7 @@ main(int argc, char *argv[]) {
                         {
                             fclose(logFile);
                             logFile = NULL;
-                            
+
                             oputs("Appending log to ");
                             oputs(param);
                             oputs(".\n");
@@ -164,11 +164,11 @@ compile(char *file) {
         if (file == NULL) {
             input = stdin;
         } else if (!openin(file))
-            return;
+            return 0;
         if (file == NULL) {
             output = stdout;
         } else if (!openout())
-            return;
+            return 0;
         header();
         code_segment_gtext();
         parse();
@@ -291,7 +291,7 @@ dumplits() {
     int j, k;
 
     if (litptr == 0)
-        return;
+        return 0;
     print_label(litlab);
     output_label_terminator();
     k = 0;
@@ -316,7 +316,7 @@ dumpglbs() {
     int dim, i, list_size, line_count, value;
 
     if (!glbflag)
-        return;
+        return 0;
     current_symbol_table_idx = rglobal_table_index;
     while (current_symbol_table_idx < global_table_index) {
         SYMBOL *symbol = &symbol_table[current_symbol_table_idx];

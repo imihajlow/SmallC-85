@@ -189,7 +189,7 @@ blanks() {
         else if (ch () == 9)
             gch ();
         else
-            return;
+            return 0;
     }
 }
 

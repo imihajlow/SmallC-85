@@ -26,7 +26,7 @@ nosign(LVALUE *is) {
  * @param comma
  * @return
  */
-expression(int comma) {
+void expression(int comma) {
     LVALUE lval;
     int k;
 
