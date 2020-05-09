@@ -50,6 +50,7 @@ void header () {
     output_string ("\t.global __cc_ule\n");
     output_string ("\t.global __cc_uge\n");
     output_string ("\t.global __cc_ugt\n");
+    output_string ("\t.global __cc_case\n");
 }
 
 /**
@@ -170,10 +171,12 @@ void gen_get_memory(SYMBOL *sym) {
         output_with_tab ("ld b"); newline ();
         output_with_tab ("mov a, 0"); newline();
     } else {
-        // fetch two bytes
-        output_with_tab ("ld b"); newline ();
-        output_with_tab ("inc pl"); newline();
-        output_with_tab ("ld a"); newline();
+        // fetch two bytes, unaligned
+        output_line ("ld b");
+        output_line ("inc pl");
+        output_line ("mov a, 0");
+        output_line ("adc ph, a");
+        output_line ("ld a");
     }
     gen_store_pri();
 }
@@ -218,19 +221,21 @@ void gen_put_memory(SYMBOL *sym) {
     int one_byte;
     output_line("; gen_put_memory");
     one_byte = (sym->identity != POINTER) && (sym->type & CCHAR);
-    output_with_tab ("ldi pl, lo(__cc_r_pri)"); newline ();
-    output_with_tab ("ldi ph, hi(__cc_r_pri)"); newline ();
-    output_with_tab ("ld b"); newline ();
+    output_line ("ldi pl, lo(__cc_r_pri)");
+    output_line ("ldi ph, hi(__cc_r_pri)");
+    output_line ("ld a");
     if (!one_byte) {
-        output_with_tab ("inc pl"); newline ();
-        output_with_tab ("ld a"); newline ();
+        output_line ("inc pl");
+        output_line ("ld b");
     }
     output_with_tab ("ldi pl, lo("); output_string (sym->name); output_byte(')'); newline ();
     output_with_tab ("ldi ph, hi("); output_string (sym->name); output_byte(')'); newline ();
-    output_with_tab ("st b"); newline ();
+    output_line ("st a");
     if (!one_byte) {
-        output_with_tab ("inc pl"); newline ();
-        output_with_tab ("st a"); newline ();
+        output_line ("inc pl");
+        output_line ("mov a, 0");
+        output_line ("adc ph, a");
+        output_line ("st b");
     }
 }
 
@@ -244,26 +249,29 @@ void gen_put_indirect(char typeobj) {
     gen_pop ();
 
     // assuming hi(__cc_r_pri) == hi(__cc_r_sec)
-    output_with_tab ("ldi pl, lo(__cc_r_pri)"); newline ();
-    output_with_tab ("ldi ph, hi(__cc_r_pri)"); newline ();
-    output_with_tab ("ld b"); newline ();
+    output_line ("ldi pl, lo(__cc_r_pri)");
+    output_line ("ldi ph, hi(__cc_r_pri)");
+    output_line ("ld b");
 
-    output_with_tab ("ldi pl, lo(__cc_r_sec)"); newline ();
-    output_with_tab ("ld a"); newline ();
-    output_with_tab ("inc pl"); newline ();
-    output_with_tab ("ld ph"); newline ();
-    output_with_tab ("mov pl, a"); newline ();
-    output_with_tab ("st b"); newline ();
+    output_line ("ldi pl, lo(__cc_r_sec)");
+    output_line ("ld a");
+    output_line ("inc pl");
+    output_line ("ld ph");
+    output_line ("mov pl, a");
+    output_line ("st b");
 
     if (!(typeobj & CCHAR)) {
-        output_with_tab ("ldi pl, lo(__cc_r_pri + 1)"); newline ();
-        output_with_tab ("ldi ph, hi(__cc_r_pri)"); newline ();
-        output_with_tab ("ld b"); newline ();
+        output_line ("ldi pl, lo(__cc_r_pri + 1)");
+        output_line ("ldi ph, hi(__cc_r_pri)");
+        output_line ("ld b");
 
-        output_with_tab ("ldi pl, lo(__cc_r_sec + 1)"); newline ();
-        output_with_tab ("ld ph"); newline ();
-        output_with_tab ("mov pl, a"); newline ();
-        output_with_tab ("st b"); newline ();
+        output_line ("ldi pl, lo(__cc_r_sec + 1)");
+        output_line ("ld ph");
+        output_line ("mov pl, a");
+        output_line ("inc pl");
+        output_line ("mov a, 0");
+        output_line ("adc ph, a");
+        output_line ("st b");
     }
 }
 
@@ -285,20 +293,22 @@ void gen_get_indirect(char typeobj, int reg) {
     }
     output_with_tab ("ldi pl, lo("); output_string(reg_name); output_byte(')'); newline ();
     output_with_tab ("ldi ph, hi("); output_string(reg_name); output_byte(')'); newline ();
-    output_with_tab ("ld a"); newline ();
-    output_with_tab ("inc pl"); newline ();
-    output_with_tab ("ld ph"); newline ();
-    output_with_tab ("mov pl, a"); newline ();
-    output_with_tab ("ld b"); newline ();
+    output_line ("ld a");
+    output_line ("inc pl");
+    output_line ("ld ph");
+    output_line ("mov pl, a");
+    output_line ("ld b");
     if (typeobj == CCHAR) {
-        output_with_tab ("mov a, b"); newline();
-        output_with_tab ("shl a"); newline();
-        output_with_tab ("exp a"); newline();
+        output_line ("mov a, b");
+        output_line ("shl a");
+        output_line ("exp a");
     } else if (typeobj == UCHAR) {
-        output_with_tab ("mov a, 0"); newline();
+        output_line ("mov a, 0");
     } else { /*int*/
-        output_with_tab ("inc pl"); newline ();
-        output_with_tab ("ld a"); newline ();
+        output_line ("inc pl");
+        output_line ("mov a, 0");
+        output_line ("adc ph, a");
+        output_line ("ld a");
     }
     gen_store_pri();
 }
@@ -609,10 +619,10 @@ gen_divide_by_two() {
  * Case jump instruction
  */
 gen_jump_case() {
-    output_line("; gen_jump_case");
-    output_line ("WTF TODO");
-    // output_with_tab ("jmp \tcccase");
-    // newline ();
+    output_line ("; gen_jump_case");
+    output_line ("ldi pl, lo(__cc_case)");
+    output_line ("ldi ph, hi(__cc_case)");
+    output_line ("jmp");
 }
 
 /**
@@ -1077,5 +1087,9 @@ gen_multiply(int type, int size) {
         default:
             break;
     }
+}
+
+gen_align(int size) {
+    output_with_tab(".align "); output_number(size); newline();
 }
 

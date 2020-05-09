@@ -1,3 +1,5 @@
+;       runtime library for small C compiler
+
     .export __cc_r_pri
     .export __cc_r_sec
     .export __cc_r_sp
@@ -18,7 +20,7 @@
     .export __cc_ule
     .export __cc_ugt
     .export __cc_uge
-
+    .export __cc_case
     .section text
 
     ; stack grows down
@@ -753,6 +755,158 @@ exit:
     mov pl, a
     jmp
 
+    ; case jump
+    ; PRI = value
+    ; [SP] = table address
+    ; table consists on entries (value, address) for switch cases
+    ; followed by (address, 0) for the default case
+__cc_case:
+    ldi pl, lo(__cc_pop_sec)
+    ldi ph, hi(__cc_pop_sec)
+    jmp
+
+    ; PRI = value
+    ; SEC = table address
+__cc_case_loop:
+    ; tmp := case value
+    ldi pl, lo(load_tmp_inc_sec)
+    ldi ph, hi(load_tmp_inc_sec)
+    jmp
+
+    ; compare tmp and PRI
+    ldi ph, hi(__cc_r_pri)
+    ldi pl, lo(__cc_r_pri)
+    ld b
+    ldi pl, lo(tmp)
+    ld a
+    sub a, b
+    ldi pl, lo(__cc_case_next)
+    ldi ph, hi(__cc_case_next)
+    jnz ; lo(tmp) != lo(PRI)
+
+    ldi ph, hi(__cc_r_pri)
+    ldi pl, lo(__cc_r_pri + 1)
+    ld b
+    ldi pl, lo(tmp + 1)
+    ld a
+    sub a, b
+    ldi pl, lo(__cc_case_next)
+    ldi ph, hi(__cc_case_next)
+    jnz ; hi(tmp) != hi(PRI)
+
+    ; tmp == PRI
+
+    ; tmp := case label
+    ldi pl, lo(load_tmp_inc_sec)
+    ldi ph, hi(load_tmp_inc_sec)
+    jmp
+
+    ; tmp == 0?
+    ldi pl, lo(tmp)
+    ldi ph, hi(tmp)
+    ld b
+    inc pl
+    ld a
+    or b, a
+    ldi pl, lo(__cc_case_default)
+    ldi ph, hi(__cc_case_default)
+    jz ; tmp == 0
+
+    ; case matched, label non-zero, jump
+    ldi pl, lo(tmp)
+    ldi ph, hi(tmp)
+    ld pl
+    ; a is still hi(tmp)
+    mov ph, a
+    jmp
+
+__cc_case_next:
+    ; tmp != PRI
+
+    ; tmp := case label
+    ldi pl, lo(load_tmp_inc_sec)
+    ldi ph, hi(load_tmp_inc_sec)
+    jmp
+
+    ; tmp == 0?
+    ldi pl, lo(tmp)
+    ldi ph, hi(tmp)
+    ld b
+    inc pl
+    ld a
+    or b, a
+    ldi pl, lo(__cc_case_loop)
+    ldi ph, hi(__cc_case_loop)
+    jnz ; tmp != 0
+
+__cc_case_default:
+    ; jump to *(sec - 4)
+    ldi pl, lo(__cc_r_sec + 1)
+    ldi ph, hi(__cc_r_sec)
+    ld a
+    dec pl
+    ld pl
+    ; a:pl = sec
+    dec pl
+    sbb a, 0
+    dec pl
+    dec pl
+    sbb a, 0
+    mov ph, a
+    ; P = sec - 3
+    ld a
+    dec pl
+    ld pl
+    mov ph, a
+    jmp
+
+
+    ; tmp := *sec
+    ; sec += 2
+load_tmp_inc_sec:
+    mov a, pl
+    mov b, a
+    mov a, ph
+    ldi pl, lo(int_ret)
+    ldi ph, hi(int_ret)
+    st b
+    inc pl
+    st a
+
+    ; tmp := *sec
+    ldi pl, lo(__cc_r_sec)
+    ldi ph, hi(__cc_r_sec)
+    ld a
+    inc pl
+    ld ph
+    mov pl, a
+    ld a
+    inc pl
+    ld b
+    ldi pl, lo(tmp)
+    ldi ph, hi(tmp)
+    st a
+    inc pl
+    st b
+
+    ; sec += 2
+    ldi pl, lo(__cc_r_sec)
+    ldi ph, hi(__cc_r_sec)
+    ld b
+    inc pl
+    ld a
+    inc b
+    inc b
+    adc a, 0
+    st a
+    dec pl
+    st b
+
+    ldi pl, lo(exit)
+    ldi ph, hi(exit)
+    jmp
+
+
     .section data
     .align 16 ; all internal data have same hi byte
 __cc_r_pri: res 2
@@ -761,3 +915,4 @@ __cc_r_sp: res 2
 __cc_r_ret: res 2
 
 int_ret: res 2
+tmp: res 2

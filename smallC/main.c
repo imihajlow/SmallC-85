@@ -284,16 +284,7 @@ dumplits() {
     output_label_terminator();
     k = 0;
     while (k < litptr) {
-        gen_def_byte();
-        j = 8;
-        while (j--) {
-            output_number(litq[k++] & 127);
-            if ((j == 0) | (k >= litptr)) {
-                newline();
-                break;
-            }
-            output_byte(',');
-        }
+        gen_def_byte(); output_number(litq[k++] & 127); newline();
     }
 }
 

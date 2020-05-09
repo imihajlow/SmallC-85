@@ -385,31 +385,18 @@ docont() {
  * dump switch table
  */
 dumpsw(WHILE *ws) {
-        int     i,j;
+        int     j;
 
-        data_segment_gdata ();
+        gen_align(2);
         generate_label (ws->body_tab);
         if (ws->case_test != swstp) {
                 j = ws->case_test;
                 while (j < swstp) {
-                        gen_def_word ();
-                        i = 4;
-                        while (i--) {
-                                output_number (swstcase[j]);
-                                output_byte (',');
-                                print_label (swstlab[j++]);
-                                if ((i == 0) | (j >= swstp)) {
-                                        newline ();
-                                        break;
-                                }
-                                output_byte (',');
-                        }
+                        gen_def_word (); output_number (swstcase[j]); newline ();
+                        gen_def_word (); print_label (swstlab[j++]); newline ();
                 }
         }
-        gen_def_word ();
-        print_label (ws->incr_def);
-        output_string (",0");
-        newline ();
-        code_segment_gtext ();
+        gen_def_word (); print_label (ws->incr_def); newline ();
+        gen_def_word (); output_number (0); newline ();
 }
 
