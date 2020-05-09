@@ -138,8 +138,8 @@ struct while_rec {
 #define DEFLIB  inclib()
 
 #define FETCH  1
-#define HL_REG 1<<1
-#define DE_REG 1<<2
+#define PRI_REG 1<<1
+#define SEC_REG 1<<2
 
 struct lvalue {
     SYMBOL *symbol;     /* symbol table address, or 0 for constant */

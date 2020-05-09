@@ -37,7 +37,7 @@ glabel(char *lab) {
 /**
  * gnlabel - generate numeric label
  * @param nlab label number
- * @return 
+ * @return
  */
 generate_label(int nlab) {
     print_label (nlab);
@@ -48,7 +48,7 @@ generate_label(int nlab) {
 /**
  * outputs one byte
  * @param c
- * @return 
+ * @return
  */
 output_byte(char c) {
     if (c == 0)
@@ -60,7 +60,7 @@ output_byte(char c) {
 /**
  * outputs a string
  * @param ptr the string
- * @return 
+ * @return
  */
 output_string(char ptr[]) {
     int k;
@@ -70,7 +70,7 @@ output_string(char ptr[]) {
 
 /**
  * outputs a tab
- * @return 
+ * @return
  */
 print_tab() {
     output_byte ('\t');
@@ -79,7 +79,7 @@ print_tab() {
 /**
  * output line
  * @param ptr
- * @return 
+ * @return
  */
 output_line(char ptr[])
 {
@@ -90,7 +90,7 @@ output_line(char ptr[])
 /**
  * tabbed output
  * @param ptr
- * @return 
+ * @return
  */
 output_with_tab(char ptr[]) {
     print_tab ();
@@ -100,7 +100,7 @@ output_with_tab(char ptr[]) {
 /**
  * output decimal number
  * @param number
- * @return 
+ * @return
  */
 output_decimal(int number) {
     fprintf(output, "%d", number);
@@ -109,7 +109,7 @@ output_decimal(int number) {
 /**
  * stores values into memory
  * @param lval
- * @return 
+ * @return
  */
 store(LVALUE *lval) {
     if (lval->indirect == 0)
@@ -123,14 +123,14 @@ rvalue(LVALUE *lval, int reg) {
         gen_get_memory (lval->symbol);
     else
         gen_get_indirect (lval->indirect, reg);
-    return HL_REG;
+    return PRI_REG;
 }
 
 /**
  * parses test part "(expression)" input and generates assembly for jump
  * @param label
  * @param ft : false - test jz, true test jnz
- * @return 
+ * @return
  */
 test(int label, int ft) {
     needbrack ("(");
@@ -144,7 +144,7 @@ test(int label, int ft) {
  * @param type
  * @param otag
  * @param size
- * @return 
+ * @return
  */
 scale_const(int type, int otag, int *size) {
     switch (type) {

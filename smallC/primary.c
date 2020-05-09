@@ -20,19 +20,18 @@ primary (LVALUE *lval) {
     }
     if (amatch("sizeof", 6)) {
         needbrack("(");
-        gen_immediate();
         if (amatch("int", 3) || amatch("unsigned int", 12)){
             blanks();
             /* pointers and ints are both INTSIZE */
             match("*");
-            output_number(INTSIZE);
+            gen_immediate_number(INTSIZE);
         }
         else if (amatch("char", 4) || amatch("unsigned char", 13)){
             /* if sizeof a char pointer, output INTSIZE */
             if(match("*"))
-                output_number(INTSIZE);
+                gen_immediate_number(INTSIZE);
             else
-                output_number(1);
+                gen_immediate_number(1);
         }
         else if (amatch("struct", 6)){
             if(symname(sname) == 0){
@@ -43,9 +42,9 @@ primary (LVALUE *lval) {
             }
             /* Write out struct size, or INTSIZE if struct pointer */
             if(match("*"))
-                output_number(INTSIZE);
+                gen_immediate_number(INTSIZE);
             else
-                output_number(tag_table[otag].size);
+                gen_immediate_number(tag_table[otag].size);
         } else if (symname(sname)) {
             if (((symbol_table_idx = find_locale(sname)) > -1) ||
                 ((symbol_table_idx = find_global(sname)) > -1)) {
@@ -58,16 +57,15 @@ primary (LVALUE *lval) {
                     offset *= INTSIZE;
                 else if (symbol->type == STRUCT)
                     offset *= tag_table[symbol->tagidx].size;
-                output_number(offset);
+                gen_immediate_number(offset);
             } else {
                 error("sizeof undeclared variable");
-                output_number(0);
+                gen_immediate_number(0);
             }
         } else {
             error("sizeof only on type or variable");
         }
         needbrack(")");
-        newline();
         lval->symbol = 0;
         lval->indirect = 0;
         return(0);
@@ -105,11 +103,9 @@ primary (LVALUE *lval) {
                     if (symbol->identity == POINTER) {
                         lval->ptr_type = symbol->type;
                     }
-                    return FETCH | HL_REG;
+                    return FETCH | PRI_REG;
                 }
-                gen_immediate();
-                output_string(symbol->name);
-                newline();
+                gen_immediate_symbol(symbol->name, 0);
                 lval->indirect = symbol->type;
                 lval->ptr_type = symbol->type;
                 return 0;
@@ -131,8 +127,7 @@ primary (LVALUE *lval) {
     }
     else {
         error("invalid expression");
-        gen_immediate();
-        output_number(0);
+        gen_immediate_number(0);
         newline();
         junk();
         return 0;
@@ -177,17 +172,13 @@ result (LVALUE *lval, LVALUE *lval2) {
 
 constant (int val[]) {
     if (number (val))
-        gen_immediate ();
+        gen_immediate_number (val[0]);
     else if (quoted_char (val))
-        gen_immediate ();
+        gen_immediate_number (val[0]);
     else if (quoted_string (val)) {
-        gen_immediate ();
-        print_label (litlab);
-        output_byte ('+');
+        gen_immediate_label (litlab, val[0]);
     } else
         return (0);
-    output_number (val[0]);
-    newline ();
     return (1);
 }
 
@@ -313,21 +304,19 @@ void callfunction (char *ptr) {
     nargs = 0;
     blanks ();
     if (ptr == 0)
-        gen_push (HL_REG);
+        gen_push (PRI_REG);
     while (!streq (line + lptr, ")")) {
         if (endst ())
             break;
         expression (NO);
         if (ptr == 0)
             gen_swap_stack ();
-        gen_push (HL_REG);
+        gen_push (PRI_REG);
         nargs = nargs + INTSIZE;
         if (!match (","))
             break;
     }
     needbrack (")");
-    if (aflag)
-        gnargs(nargs / INTSIZE);
     if (ptr)
         gen_call (ptr);
     else

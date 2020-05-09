@@ -51,8 +51,6 @@ extern  int     errfile;
 extern  int     sflag;
 extern  int     cflag;
 extern  int     errs;
-extern  int     aflag;
-extern  int     uflag;  /* undocumented 8085 instructions */
 
 extern INITIALS initials_table[NUMBER_OF_GLOBALS];
 /* 5kB space for initialisation data*/

@@ -58,8 +58,6 @@ int     errfile;
 int     sflag;
 int     cflag;
 int     errs;
-int     aflag;
-int     uflag;  /* undocumented 8085 instructions */
 
 INITIALS initials_table[NUMBER_OF_GLOBALS];
 char initials_data_table[INITIALS_SIZE]; /* 5kB space for initialisation data */

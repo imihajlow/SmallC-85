@@ -590,7 +590,7 @@ hier10 (LVALUE *lval) {
         k = rvalue(lval, k);
         gen_increment_primary_reg (lval);
         store (lval);
-        return (HL_REG);
+        return (PRI_REG);
     } else if (match ("--")) {
         if (((k = hier10 (lval)) & FETCH) == 0) {
             needlval ();
@@ -601,25 +601,25 @@ hier10 (LVALUE *lval) {
         k = rvalue(lval, k);
         gen_decrement_primary_reg (lval);
         store (lval);
-        return (HL_REG);
+        return (PRI_REG);
     } else if (match ("-")) {
         k = hier10 (lval);
         if (k & FETCH)
             k = rvalue(lval, k);
         gen_twos_complement();
-        return (HL_REG);
+        return (PRI_REG);
     } else if (match ("~")) {
         k = hier10 (lval);
         if (k & FETCH)
             k = rvalue(lval, k);
         gen_complement ();
-        return (HL_REG);
+        return (PRI_REG);
     } else if (match ("!")) {
         k = hier10 (lval);
         if (k & FETCH)
             k = rvalue(lval, k);
         gen_logical_negation();
-        return (HL_REG);
+        return (PRI_REG);
     } else if (ch()=='*' && nch() != '=') {
         inbyte();
         k = hier10 (lval);
@@ -647,17 +647,15 @@ hier10 (LVALUE *lval) {
         ptr = lval->symbol;
         lval->ptr_type = ptr->type;
         if (lval->indirect) {
-            if (k & DE_REG) {
+            if (k & SEC_REG) {
                 gen_swap();
             }
-            return (HL_REG);
+            return (PRI_REG);
         }
         /* global and non-array */
-        gen_immediate ();
-        output_string ((ptr = lval->symbol)->name);
-        newline ();
+        gen_immediate_symbol ((ptr = lval->symbol)->name, 0);
         lval->indirect = ptr->type;
-        return (HL_REG);
+        return (PRI_REG);
     } else {
         k = hier11 (lval);
         if (match ("++")) {
@@ -671,7 +669,7 @@ hier10 (LVALUE *lval) {
             gen_increment_primary_reg (lval);
             store (lval);
             gen_decrement_primary_reg (lval);
-            return (HL_REG);
+            return (PRI_REG);
         } else if (match ("--")) {
             if ((k & FETCH) == 0) {
                 needlval ();
@@ -683,7 +681,7 @@ hier10 (LVALUE *lval) {
             gen_decrement_primary_reg (lval);
             store (lval);
             gen_increment_primary_reg (lval);
-            return (HL_REG);
+            return (PRI_REG);
         } else
             return (k);
     }
@@ -725,7 +723,7 @@ hier11(LVALUE *lval) {
                 /*lval->symbol = 0;*/
                 lval->indirect = ptr->type;
                 lval->ptr_type = 0;
-                k = FETCH | HL_REG;
+                k = FETCH | PRI_REG;
             } else if (match ("(")) {
                 if (ptr == 0) {
                     callfunction(0);
@@ -752,7 +750,7 @@ hier11(LVALUE *lval) {
                 if ((k & FETCH) && direct == 0) {
                     k = rvalue(lval, k);
                 }
-                if (k == DE_REG) {
+                if (k == SEC_REG) {
                     gen_swap();
                 }
 
@@ -779,7 +777,7 @@ hier11(LVALUE *lval) {
                     /*lval->val_type = CINT;*/
                     k = 0;
                 } else {
-                    k = FETCH | HL_REG;
+                    k = FETCH | PRI_REG;
                 }
             }
             else return k;
@@ -787,9 +785,7 @@ hier11(LVALUE *lval) {
     if (ptr == 0)
         return k;
     if (ptr->identity == FUNCTION) {
-        gen_immediate();
-        output_string(ptr);
-        newline();
+        gen_immediate_symbol (ptr, 0);
         return 0;
     }
     return k;

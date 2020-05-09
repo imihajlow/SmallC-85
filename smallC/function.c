@@ -37,9 +37,7 @@ void newfunc() {
         add_global(n, FUNCTION, CINT, FUNCTION, PUBLIC);
     if (!match("("))
         error("missing open paren");
-    output_string(n);
-    output_label_terminator();
-    newline();
+    declare_entry_point(n);
     local_table_index = NUMBER_OF_GLOBALS; /*locptr = STARTLOC;*/
     argstk = 0;
     /* ANSI style argument declaration*/

@@ -28,8 +28,6 @@ main(int argc, char *argv[]) {
     macptr = 0;
     ctext = 0;
     errs = 0;
-    aflag = 1;
-    uflag = 0;
 
     setbuf(stdout, NULL); /* disable stdout buffering */ /* why exactly? */
 
@@ -49,14 +47,6 @@ main(int argc, char *argv[]) {
                     /* linker - this option does not work */
                     case 'c': case 'C':
                         cflag = 1;
-                        break;
-                    /* no argument count in A to function calls */
-                    case 'a': case 'A':
-                        aflag = 0;
-                        break;
-                    /* use undocumented 8085 instructions */
-                    case 'u': case 'U':
-                        uflag = 1;
                         break;
                     /* define macro */
                     case 'd': case 'D':
@@ -210,9 +200,7 @@ frontend_version() {
 usage() {
     oputs("usage: sccXXXX [-tcsah] [-dSYM[=VALUE]] [-l[log]] files\n");
     oputs("-t: output c source as asm comments\n");
-    oputs("-a: no argument count in A to function calls\n");
     oputs("-d: define macro\n");
-    oputs("-u: use undocumented 8085 instructions LDSI, LHLX, SHLX\n");
     oputs("-s: assemble generated output, not implemented\n");
     oputs("-c: link, not implemented\n");
     oputs("-h: displays usage\n");

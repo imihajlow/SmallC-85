@@ -293,10 +293,8 @@ doswitch() {
         ws.body_tab = getlabel ();
         ws.incr_def = ws.while_exit = getlabel ();
         addwhile (&ws);
-        gen_immediate ();
-        print_label (ws.body_tab);
-        newline ();
-        gen_push (HL_REG);
+        gen_immediate_label (ws.body_tab, 0);
+        gen_push (PRI_REG);
         needbrack ("(");
         expression (YES);
         needbrack (")");
