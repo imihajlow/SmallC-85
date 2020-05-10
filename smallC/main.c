@@ -163,8 +163,11 @@ compile(char *file) {
         code_segment_gtext();
         parse();
         fclose(input);
-        data_segment_gdata();
+        code_segment_gtext();
+        output_line("; literals:");
         dumplits();
+        data_segment_gdata();
+        output_line("; globals:");
         dumpglbs();
         errorsummary();
         trailer();
