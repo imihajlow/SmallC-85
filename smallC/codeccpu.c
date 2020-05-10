@@ -191,26 +191,38 @@ void gen_get_memory(SYMBOL *sym) {
  */
 int gen_get_locale(SYMBOL *sym) {
     int sp_offset;
-    output_line("; gen_get_locale");
+    output_line ("; gen_get_locale");
     if (sym->storage == LSTATIC) {
         // load from a local label
-        gen_immediate_label(sym->offset, 0);
+        gen_immediate_label (sym->offset, 0);
         return PRI_REG;
     } else {
         sp_offset = sym->offset - stkp;
-        // x = sym->offset - stkp
-        // pri = sp + X
-        output_with_tab ("ldi pl, lo(__cc_r_sp)"); newline ();
-        output_with_tab ("ldi ph, hi(__cc_r_sp)"); newline ();
-        output_with_tab ("ldi b, lo("); output_decimal (sp_offset); output_byte (')'); newline ();
-        output_with_tab ("ld a"); newline ();
-        output_with_tab ("add b, a"); newline ();
-        output_with_tab ("inc pl"); newline ();
-        output_with_tab ("ldi a, hi("); output_decimal (sp_offset); output_byte (')'); newline ();
-        output_with_tab ("ld pl"); newline ();
-        output_with_tab ("adc a, pl"); newline ();
+        // pri = *sp + sp_offset
+        if (sp_offset) {
+            output_line ("ldi pl, lo(__cc_r_sp)");
+            output_line ("ldi ph, hi(__cc_r_sp)");
+            output_line ("ld b");
+            output_with_tab ("ldi a, "); output_number (sp_offset & 0xff); newline();
+            output_line ("inc pl");
+            output_line ("add b, a");
+            output_line ("ld a");
+            sp_offset = (sp_offset >> 8) & 0xff;
+            if (sp_offset) {
+                output_with_tab ("ldi pl, "); output_number (sp_offset); newline();
+                output_line ("adc a, pl");
+            } else {
+                output_line ("adc a, 0");
+            }
+        } else {
+            output_line ("ldi pl, lo(__cc_r_sp)");
+            output_line ("ldi ph, hi(__cc_r_sp)");
+            output_line ("ld b");
+            output_line ("inc pl");
+            output_line ("ld a");
+        }
         // a:b = result
-        gen_store_pri();
+        gen_store_pri ();
 
         return PRI_REG;
     }
@@ -286,7 +298,7 @@ void gen_put_indirect(char typeobj) {
 void gen_get_indirect(char typeobj, int reg) {
     const char *reg_name;
     output_line("; gen_get_indirect");
-    if (reg & SEC_REG)
+    if ((typeobj & CCHAR) && (reg & SEC_REG))
     {
         reg_name = "__cc_r_sec";
     }
@@ -653,30 +665,30 @@ gen_add(lval,lval2) int *lval,*lval2; {
     output_line ("ld b");
     output_line ("ldi pl, lo(__cc_r_pri + 1)");
     output_line ("ld a");
-    output_line ("add a, b");
+    output_line ("adc a, b");
     output_line ("st a");
 }
 
 /**
  * subtract the primary register from the secondary
- * PRI -= SEC
+ * PRI = SEC - PRI
  */
 gen_sub() {
-    output_line("; gen_sub");
     gen_pop ();
+    output_line("gen_sub:");
     output_line ("ldi ph, hi(__cc_r_sec)");
     output_line ("ldi pl, lo(__cc_r_sec)");
     output_line ("ld b");
     output_line ("ldi pl, lo(__cc_r_pri)");
     output_line ("ld a");
-    output_line ("sub a, b");
-    output_line ("st a");
+    output_line ("sub b, a");
+    output_line ("st b");
     output_line ("ldi pl, lo(__cc_r_sec + 1)");
     output_line ("ld b");
     output_line ("ldi pl, lo(__cc_r_pri + 1)");
     output_line ("ld a");
-    output_line ("sbb a, b");
-    output_line ("st a");
+    output_line ("sbb b, a");
+    output_line ("st b");
 }
 
 /**

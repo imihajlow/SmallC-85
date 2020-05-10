@@ -436,7 +436,7 @@ __cc_eq:
     ldi pl, lo(__cc_r_pri)
     ldi ph, hi(__cc_r_pri)
     ld b
-    ldi pl, hi(__cc_r_sec)
+    ldi pl, lo(__cc_r_sec)
     ld a
     sub b, a
     ldi pl, lo(return_0)
@@ -469,7 +469,7 @@ __cc_ne:
     ldi pl, lo(__cc_r_pri)
     ldi ph, hi(__cc_r_pri)
     ld b
-    ldi pl, hi(__cc_r_sec)
+    ldi pl, lo(__cc_r_sec)
     ld a
     sub b, a
     ldi pl, lo(return_0)
@@ -505,7 +505,7 @@ __cc_lt:
     ldi pl, lo(__cc_r_pri)
     ldi ph, hi(__cc_r_pri)
     ld b
-    ldi pl, hi(__cc_r_sec)
+    ldi pl, lo(__cc_r_sec)
     ld a
     sub a, b ; lo(SEC) - lo(PRI)
     ldi pl, lo(return_ns)
@@ -555,7 +555,7 @@ __cc_le:
     ldi pl, lo(__cc_r_pri)
     ldi ph, hi(__cc_r_pri)
     ld b
-    ldi pl, hi(__cc_r_sec)
+    ldi pl, lo(__cc_r_sec)
     ld a
     sub a, b ; lo(SEC) - lo(PRI)
     ldi pl, lo(return_ns)
@@ -594,7 +594,7 @@ __cc_gt:
     ldi pl, lo(__cc_r_pri)
     ldi ph, hi(__cc_r_pri)
     ld b
-    ldi pl, hi(__cc_r_sec)
+    ldi pl, lo(__cc_r_sec)
     ld a
     sub a, b ; lo(SEC) - lo(PRI)
     ldi pl, lo(return_s)
@@ -633,7 +633,7 @@ __cc_ge:
     ldi pl, lo(__cc_r_pri)
     ldi ph, hi(__cc_r_pri)
     ld b
-    ldi pl, hi(__cc_r_sec)
+    ldi pl, lo(__cc_r_sec)
     ld a
     sub a, b ; lo(SEC) - lo(PRI)
     ldi pl, lo(return_s)
@@ -672,7 +672,7 @@ __cc_ult:
     ldi pl, lo(__cc_r_pri)
     ldi ph, hi(__cc_r_pri)
     ld b
-    ldi pl, hi(__cc_r_sec)
+    ldi pl, lo(__cc_r_sec)
     ld a
     sub a, b ; lo(SEC) - lo(PRI)
     ldi pl, lo(return_1)
@@ -708,7 +708,7 @@ __cc_ule:
     ldi pl, lo(__cc_r_pri)
     ldi ph, hi(__cc_r_pri)
     ld b
-    ldi pl, hi(__cc_r_sec)
+    ldi pl, lo(__cc_r_sec)
     ld a
     sub a, b ; lo(SEC) - lo(PRI)
     ldi pl, lo(return_1)
@@ -745,7 +745,7 @@ __cc_ugt:
     ldi pl, lo(__cc_r_pri)
     ldi ph, hi(__cc_r_pri)
     ld b
-    ldi pl, hi(__cc_r_sec)
+    ldi pl, lo(__cc_r_sec)
     ld a
     sub a, b ; lo(SEC) - lo(PRI)
     ldi pl, lo(return_0)
@@ -782,7 +782,7 @@ __cc_uge:
     ldi pl, lo(__cc_r_pri)
     ldi ph, hi(__cc_r_pri)
     ld b
-    ldi pl, hi(__cc_r_sec)
+    ldi pl, lo(__cc_r_sec)
     ld a
     sub a, b ; lo(SEC) - lo(PRI)
     ldi pl, lo(return_0)
