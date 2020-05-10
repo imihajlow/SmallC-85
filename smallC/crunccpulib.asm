@@ -7,9 +7,11 @@
     .export __cc_push_pri
     .export __cc_push_sec
     .export __cc_push_ret
+    .export __cc_ret
     .export __cc_pop_sec
     .export __cc_swap_stack_pri
     .export __cc_bool_not
+    .export __cc_bool
     .export __cc_eq
     .export __cc_ne
     .export __cc_lt
@@ -21,11 +23,34 @@
     .export __cc_ugt
     .export __cc_uge
     .export __cc_case
-    .section text
 
     ; stack grows down
     ; SP should be aligned by 2
 
+    .global __seg_stack_end ; provided by the linker
+    .global main
+
+    ; start-up code
+    .section init
+    ; point SP to the end of stack segment
+    ldi pl, lo(__cc_r_sp)
+    ldi ph, hi(__cc_r_sp)
+    ldi a, lo(__seg_stack_end)
+    st a
+    inc pl
+    ldi a, hi(__seg_stack_end)
+    st a
+
+    ; call main
+    ldi pl, lo(main)
+    ldi ph, hi(main)
+    jmp
+main_exit:
+    ldi pl, lo(main_exit)
+    ldi ph, hi(main_exit)
+    jmp
+
+    .section text
     ; push pri onto stack
 __cc_push_pri:
     mov a, pl
@@ -55,22 +80,20 @@ __cc_push_pri:
     ldi pl, lo(__cc_r_pri)
     ld pl
     mov ph, a
-    mov b, a
+    mov a, b
     xor pl, a
     xor a, pl
     xor pl, a
     st a
 
     ; a:b := ph:pl
-    mov a, pl
-    mov b, a
     mov a, ph
     ; SP[1] := hi(pri)
     ldi ph, hi(__cc_r_pri)
     ldi pl, lo(__cc_r_pri + 1)
     ld pl
     mov ph, a
-    mov b, a
+    mov a, b
     xor pl, a
     xor a, pl
     xor pl, a
@@ -114,22 +137,20 @@ __cc_push_sec:
     ldi pl, lo(__cc_r_sec)
     ld pl
     mov ph, a
-    mov b, a
+    mov a, b
     xor pl, a
     xor a, pl
     xor pl, a
     st a
 
     ; a:b := ph:pl
-    mov a, pl
-    mov b, a
     mov a, ph
     ; SP[1] := hi(sec)
     ldi ph, hi(__cc_r_sec)
     ldi pl, lo(__cc_r_sec + 1)
     ld pl
     mov ph, a
-    mov b, a
+    mov a, b
     xor pl, a
     xor a, pl
     xor pl, a
@@ -173,22 +194,20 @@ __cc_push_ret:
     ldi pl, lo(__cc_r_ret)
     ld pl
     mov ph, a
-    mov b, a
+    mov a, b
     xor pl, a
     xor a, pl
     xor pl, a
     st a
 
     ; a:b := ph:pl
-    mov a, pl
-    mov b, a
     mov a, ph
     ; SP[1] := hi(ret)
     ldi ph, hi(__cc_r_ret)
     ldi pl, lo(__cc_r_ret + 1)
     ld pl
     mov ph, a
-    mov b, a
+    mov a, b
     xor pl, a
     xor a, pl
     xor pl, a
@@ -267,7 +286,41 @@ __cc_swap_stack_pri:
     inc pl
     st a
 
-    ; TODO
+    ldi pl, lo(__cc_r_sp)
+    ld a
+    inc pl
+    ld ph
+    mov pl, a
+    ld a
+
+    ldi ph, hi(__cc_r_pri)
+    ldi pl, lo(__cc_r_pri)
+    ld b
+    st a
+
+    ldi ph, hi(__cc_r_sp)
+    ldi pl, lo(__cc_r_sp)
+    ld a
+    inc pl
+    ld ph
+    mov pl, a
+    st b
+    inc pl
+    ld a
+
+    ldi ph, hi(__cc_r_pri)
+    ldi pl, lo(__cc_r_pri + 1)
+    ld b
+    st a
+
+    ldi ph, hi(__cc_r_sp)
+    ldi pl, lo(__cc_r_sp)
+    ld a
+    inc pl
+    ld ph
+    mov pl, a
+    inc pl
+    st b
 
     ldi pl, lo(int_ret)
     ldi ph, hi(int_ret)
@@ -318,15 +371,19 @@ __cc_bool_not:
     inc pl
     st a
 
-    ; TODO
-
-    ldi pl, lo(int_ret)
-    ldi ph, hi(int_ret)
+    ldi pl, lo(__cc_r_pri)
     ld a
     inc pl
-    ld ph
-    mov pl, a
-    jmp
+    ld b
+    or a, b
+
+    ldi pl, lo(return_0)
+    ldi ph, hi(return_0)
+    jnz
+
+    ldi pl, lo(return_1)
+    ldi ph, hi(return_1)
+    jz
 
     ; PRI = PRI ? 1 : 0
 __cc_bool:
@@ -339,15 +396,19 @@ __cc_bool:
     inc pl
     st a
 
-    ; TODO
-
-    ldi pl, lo(int_ret)
-    ldi ph, hi(int_ret)
+    ldi pl, lo(__cc_r_pri)
     ld a
     inc pl
-    ld ph
-    mov pl, a
-    jmp
+    ld b
+    or a, b
+
+    ldi pl, lo(return_0)
+    ldi ph, hi(return_0)
+    jz
+
+    ldi pl, lo(return_1)
+    ldi ph, hi(return_1)
+    jnz
 
     ; PRI = PRI == SEC
 __cc_eq:
@@ -733,12 +794,13 @@ return_1:
     ldi ph, hi(__cc_r_pri)
     mov a, 0
     st a
-    inc pl
+    dec pl
     inc a
     st a
     ldi pl, lo(exit)
     ldi ph, hi(exit)
     jmp
+
 return_0:
     ldi pl, lo(__cc_r_pri)
     ldi ph, hi(__cc_r_pri)
