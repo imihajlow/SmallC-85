@@ -23,6 +23,9 @@
     .export __cc_ugt
     .export __cc_uge
     .export __cc_case
+    .export __cc_asr
+    .export __cc_lsr
+    .export __cc_asl
 
     ; stack grows down
     ; SP should be aligned by 2
@@ -968,6 +971,294 @@ load_tmp_inc_sec:
     ldi ph, hi(exit)
     jmp
 
+    ; PRI = SEC >> PRI
+__cc_asr:
+    mov a, pl
+    mov b, a
+    mov a, ph
+    ldi pl, lo(int_ret)
+    ldi ph, hi(int_ret)
+    st b
+    inc pl
+    st a
+
+    ldi pl, lo(__cc_r_pri)
+    ld b
+    inc pl
+    ld a
+    ldi pl, lo(return_sec_sign)
+    ldi ph, hi(return_sec_sign)
+    add a, 0
+    jnz ; PRI >= 256
+    ldi a, 15
+    sub a, b ; 15 - lo(PRI)
+    js ; 15 < lo(PRI)
+
+    ldi a, 8
+    sub b, a ; lo(PRI) - 8
+    ldi pl, lo(__cc_asr_count_lt_8)
+    ldi ph, hi(__cc_asr_count_lt_8)
+    js ; lo(PRI) < 8
+    sub b, a
+    ; b = count - 16
+
+    ; lo(SEC) := hi(SEC)
+    ; hi(SEC) := sign(SEC)
+    ldi pl, lo(__cc_r_sec + 1)
+    ldi ph, hi(__cc_r_sec)
+    ld a
+    dec pl
+    st a
+    inc pl
+    shl a ; sign -> carry
+    exp a
+    st a
+__cc_asr_count_lt_8:
+    ; b = count - 8
+    ; PRI := SEC
+    ldi ph, hi(__cc_r_sec)
+    ldi pl, lo(__cc_r_sec)
+    ld a
+    ldi pl, lo(__cc_r_pri)
+    st a
+    ldi pl, lo(__cc_r_sec + 1)
+    ld a
+    ldi pl, lo(__cc_r_pri + 1)
+    st a
+
+    ldi a, 8
+    add b, a
+    ldi pl, lo(exit)
+    ldi ph, hi(exit)
+    jz ; count == 0
+
+    ; b = count
+__cc_asr_loop:
+    ldi ph, hi(__cc_r_pri)
+    ldi pl, lo(__cc_r_pri)
+    ld a
+    shr a
+    st a
+    inc pl
+    ld a
+    sar a
+    st a
+    ldi pl, lo(__cc_asr_loop_end)
+    ldi ph, hi(__cc_asr_loop_end)
+    jnc
+    ldi ph, hi(__cc_r_pri)
+    ldi pl, lo(__cc_r_pri)
+    ld a
+    ldi pl, 0x80
+    or a, pl
+    ldi pl, lo(__cc_r_pri)
+    st a
+__cc_asr_loop_end:
+    ldi pl, lo(__cc_asr_loop)
+    ldi ph, hi(__cc_asr_loop)
+    dec b
+    jnz ; count != 0
+
+    ldi pl, lo(exit)
+    ldi ph, hi(exit)
+    jmp
+
+return_sec_sign:
+    ldi pl, lo(__cc_r_sec + 1)
+    ldi ph, hi(__cc_r_sec)
+    ld a
+    shl a ; sign -> carry
+    exp a
+    ldi pl, lo(__cc_r_pri)
+    st a
+    inc pl
+    st a
+    ldi pl, lo(exit)
+    ldi ph, hi(exit)
+    jmp
+
+    ; PRI = SEC >> PRI
+__cc_lsr:
+    mov a, pl
+    mov b, a
+    mov a, ph
+    ldi pl, lo(int_ret)
+    ldi ph, hi(int_ret)
+    st b
+    inc pl
+    st a
+
+    ldi pl, lo(__cc_r_pri)
+    ld b
+    inc pl
+    ld a
+    ldi pl, lo(return_0)
+    ldi ph, hi(return_0)
+    add a, 0
+    jnz ; PRI >= 256
+    ldi a, 15
+    sub a, b ; 15 - lo(PRI)
+    js ; 15 < lo(PRI)
+
+    ldi a, 8
+    sub b, a ; lo(PRI) - 8
+    ldi pl, lo(__cc_lsr_count_lt_8)
+    ldi ph, hi(__cc_lsr_count_lt_8)
+    js ; lo(PRI) < 8
+    sub b, a
+    ; b = count - 16
+
+    ; lo(SEC) := hi(SEC)
+    ; hi(SEC) := 0
+    ldi pl, lo(__cc_r_sec + 1)
+    ldi ph, hi(__cc_r_sec)
+    ld a
+    dec pl
+    st a
+    inc pl
+    mov a, 0
+    st a
+__cc_lsr_count_lt_8:
+    ; b = count - 8
+    ; PRI := SEC
+    ldi ph, hi(__cc_r_sec)
+    ldi pl, lo(__cc_r_sec)
+    ld a
+    ldi pl, lo(__cc_r_pri)
+    st a
+    ldi pl, lo(__cc_r_sec + 1)
+    ld a
+    ldi pl, lo(__cc_r_pri + 1)
+    st a
+
+    ldi a, 8
+    add b, a
+    ldi pl, lo(exit)
+    ldi ph, hi(exit)
+    jz ; count == 0
+
+    ; b = count
+__cc_lsr_loop:
+    ldi ph, hi(__cc_r_pri)
+    ldi pl, lo(__cc_r_pri)
+    ld a
+    shr a
+    st a
+    inc pl
+    ld a
+    shr a
+    st a
+    ldi pl, lo(__cc_lsr_loop_end)
+    ldi ph, hi(__cc_lsr_loop_end)
+    jnc
+    ldi ph, hi(__cc_r_pri)
+    ldi pl, lo(__cc_r_pri)
+    ld a
+    ldi pl, 0x80
+    or a, pl
+    ldi pl, lo(__cc_r_pri)
+    st a
+__cc_lsr_loop_end:
+    ldi pl, lo(__cc_asr_loop)
+    ldi ph, hi(__cc_asr_loop)
+    dec b
+    jnz ; count != 0
+
+    ldi pl, lo(exit)
+    ldi ph, hi(exit)
+    jmp
+
+
+    ; PRI = SEC << PRI
+__cc_asl:
+    mov a, pl
+    mov b, a
+    mov a, ph
+    ldi pl, lo(int_ret)
+    ldi ph, hi(int_ret)
+    st b
+    inc pl
+    st a
+
+    ldi pl, lo(__cc_r_pri)
+    ld b
+    inc pl
+    ld a
+    ldi pl, lo(return_0)
+    ldi ph, hi(return_0)
+    add a, 0
+    jnz ; PRI >= 256
+    ldi a, 15
+    sub a, b ; 15 - lo(PRI)
+    js ; 15 < lo(PRI)
+
+    ldi a, 8
+    sub b, a ; lo(PRI) - 8
+    ldi pl, lo(__cc_asl_count_lt_8)
+    ldi ph, hi(__cc_asl_count_lt_8)
+    js ; lo(PRI) < 8
+    sub b, a
+    ; b = count - 16
+
+    ; hi(SEC) := lo(SEC)
+    ; lo(SEC) := 0
+    ldi pl, lo(__cc_r_sec)
+    ldi ph, hi(__cc_r_sec)
+    ld a
+    inc pl
+    st a
+    dec pl
+    mov a, 0
+    st a
+__cc_asl_count_lt_8:
+    ; b = count - 8
+    ; PRI := SEC
+    ldi ph, hi(__cc_r_sec)
+    ldi pl, lo(__cc_r_sec)
+    ld a
+    ldi pl, lo(__cc_r_pri)
+    st a
+    ldi pl, lo(__cc_r_sec + 1)
+    ld a
+    ldi pl, lo(__cc_r_pri + 1)
+    st a
+
+    ldi a, 8
+    add b, a
+    ldi pl, lo(exit)
+    ldi ph, hi(exit)
+    jz ; count == 0
+
+    ; b = count
+__cc_asl_loop:
+    ldi ph, hi(__cc_r_pri)
+    ldi pl, lo(__cc_r_pri + 1)
+    ld a
+    shl a
+    st a
+    dec pl
+    ld a
+    shl a
+    st a
+    ldi pl, lo(__cc_asl_loop_end)
+    ldi ph, hi(__cc_asl_loop_end)
+    jnc
+    ldi ph, hi(__cc_r_pri)
+    ldi pl, lo(__cc_r_pri + 1)
+    ld a
+    ldi pl, 0x01
+    or a, pl
+    ldi pl, lo(__cc_r_pri + 1)
+    st a
+__cc_asl_loop_end:
+    ldi pl, lo(__cc_asl_loop)
+    ldi ph, hi(__cc_asl_loop)
+    dec b
+    jnz ; count != 0
+
+    ldi pl, lo(exit)
+    ldi ph, hi(exit)
+    jmp
 
     .section data
     .align 16 ; all internal data have same hi byte

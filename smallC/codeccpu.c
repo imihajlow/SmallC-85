@@ -51,6 +51,9 @@ void header () {
     output_string ("\t.global __cc_uge\n");
     output_string ("\t.global __cc_ugt\n");
     output_string ("\t.global __cc_case\n");
+    output_string ("\t.global __cc_asr\n");
+    output_string ("\t.global __cc_lsr\n");
+    output_string ("\t.global __cc_asl\n");
 }
 
 /**
@@ -798,7 +801,7 @@ gen_and() {
 gen_arithm_shift_right() {
     output_line("; gen_arithm_shift_right");
     gen_pop();
-    gen_call ("TODO ASR");
+    gen_call ("__cc_asr");
 }
 
 /**
@@ -808,7 +811,7 @@ gen_arithm_shift_right() {
 gen_logical_shift_right() {
     output_line("; gen_logical_shift_right");
     gen_pop();
-    gen_call ("TODO LSR");
+    gen_call ("__cc_lsr");
 }
 
 /**
@@ -818,7 +821,7 @@ gen_logical_shift_right() {
 gen_arithm_shift_left() {
     output_line("; gen_arithm_shift_left");
     gen_pop ();
-    gen_call ("TODO ASL");
+    gen_call ("__cc_asl");
 }
 
 /**
