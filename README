@@ -1,3 +1,13 @@
+CCPU code generator instead of 8080.
+
+Missing features:
+- static data initialization (missing linker support).
+
+Possible bugs:
+- a lot.
+
+----------------------- 8080 version posting ------------------------------
+
 Revived version of SmallC based on Chris Lewis' port to UNIX V. I have
 mainly rewritten code to use structures and to make it compile using GCC
 silently without warnigns.
