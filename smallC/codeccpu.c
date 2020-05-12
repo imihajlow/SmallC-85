@@ -54,6 +54,7 @@ void header () {
     output_string ("\t.global __cc_asr\n");
     output_string ("\t.global __cc_lsr\n");
     output_string ("\t.global __cc_asl\n");
+    output_string ("\t.global __cc_mul\n");
 }
 
 /**
@@ -698,7 +699,7 @@ gen_sub() {
 gen_mult() {
     output_line("; gen_mult");
     gen_pop();
-    gen_call ("TODO MUL");
+    gen_call ("__cc_mul");
 }
 
 /**

@@ -26,6 +26,7 @@
     .export __cc_asr
     .export __cc_lsr
     .export __cc_asl
+    .export __cc_mul
 
     ; stack grows down
     ; SP should be aligned by 2
@@ -1255,6 +1256,109 @@ __cc_asl_loop_end:
     ldi ph, hi(__cc_asl_loop)
     dec b
     jnz ; count != 0
+
+    ldi pl, lo(exit)
+    ldi ph, hi(exit)
+    jmp
+
+
+    ; multiply PRI and SEC, result into PRI
+__cc_mul:
+    mov a, pl
+    mov b, a
+    mov a, ph
+    ldi pl, lo(int_ret)
+    ldi ph, hi(int_ret)
+    st b
+    inc pl
+    st a
+
+    ; tmp := 0
+    ldi pl, lo(tmp)
+    ldi ph, hi(tmp)
+    mov a, 0
+    st a
+    inc pl
+    st a
+
+__cc_mul_loop:
+    ; lo(SEC) >>= 1
+    ldi pl, lo(__cc_r_sec)
+    ldi ph, hi(__cc_r_sec)
+    ld a
+    shr a
+    st a
+    ldi pl, lo(__cc_mul_added)
+    ldi ph, hi(__cc_mul_added)
+    jnc ; no need to add
+    ; tmp += PRI
+    ldi pl, lo(__cc_r_pri)
+    ldi ph, hi(__cc_r_pri)
+    ld a
+    ldi pl, lo(tmp)
+    ld b
+    add b, a
+    st b
+    ldi pl, lo(__cc_r_pri + 1)
+    ld a
+    ldi pl, lo(tmp + 1)
+    ld b
+    adc b, a
+    st b
+__cc_mul_added:
+    ; hi(SEC) >>= 1
+    ldi pl, lo(__cc_r_sec + 1)
+    ldi ph, hi(__cc_r_sec)
+    ld b
+    shr b
+    st b
+    exp b
+    ldi a, 0x80
+    and a, b
+    ; lo(SEC) |= c ? 0x80 : 0
+    dec pl
+    ld b
+    or a, b
+    st a
+    ; PRI <<= 1
+    ldi pl, lo(__cc_r_pri)
+    ld a
+    shl a
+    st a
+    exp b
+    ldi a, 0x01
+    and b, a
+    inc pl
+    ld a
+    shl a
+    or a, b
+    st a
+
+    ; PRI | SEC == 0?
+    ; a = hi(PRI)
+    dec pl
+    ld b
+    or a, b
+    ldi pl, lo(__cc_r_sec)
+    ld b
+    or a, b
+    inc pl
+    ld b
+    or a, b
+    ldi pl, lo(__cc_mul_loop)
+    ldi ph, hi(__cc_mul_loop)
+    jnz ; PRI | SEC != 0
+
+    ; PRI := tmp
+    ldi pl, lo(tmp)
+    ldi ph, hi(tmp)
+    ld a
+    inc pl
+    ld b
+    ldi pl, lo(__cc_r_pri)
+    st a
+    inc pl
+    st b
 
     ldi pl, lo(exit)
     ldi ph, hi(exit)
