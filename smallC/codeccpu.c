@@ -55,6 +55,8 @@ void header () {
     output_string ("\t.global __cc_lsr\n");
     output_string ("\t.global __cc_asl\n");
     output_string ("\t.global __cc_mul\n");
+    output_string ("\t.global __cc_div\n");
+    output_string ("\t.global __cc_udiv\n");
 }
 
 /**
@@ -709,7 +711,7 @@ gen_mult() {
 gen_div() {
     output_line("; gen_div");
     gen_pop();
-    gen_call ("TODO DIV");
+    gen_call ("__cc_div");
 }
 
 /**
@@ -719,7 +721,7 @@ gen_div() {
 gen_udiv() {
     output_line("; gen_udiv");
     gen_pop();
-    gen_call ("TODO UDIV");
+    gen_call ("__cc_udiv");
 }
 
 /**

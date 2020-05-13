@@ -27,6 +27,9 @@
     .export __cc_lsr
     .export __cc_asl
     .export __cc_mul
+    .export __cc_div
+    .export __cc_udiv
+    .export __cc_div_zero_trap
 
     ; stack grows down
     ; SP should be aligned by 2
@@ -993,13 +996,13 @@ __cc_asr:
     jnz ; PRI >= 256
     ldi a, 15
     sub a, b ; 15 - lo(PRI)
-    js ; 15 < lo(PRI)
+    jc ; 15 < lo(PRI)
 
     ldi a, 8
     sub b, a ; lo(PRI) - 8
     ldi pl, lo(__cc_asr_count_lt_8)
     ldi ph, hi(__cc_asr_count_lt_8)
-    js ; lo(PRI) < 8
+    jc ; lo(PRI) < 8
     sub b, a
     ; b = count - 16
 
@@ -1099,13 +1102,13 @@ __cc_lsr:
     jnz ; PRI >= 256
     ldi a, 15
     sub a, b ; 15 - lo(PRI)
-    js ; 15 < lo(PRI)
+    jc ; 15 < lo(PRI)
 
     ldi a, 8
     sub b, a ; lo(PRI) - 8
     ldi pl, lo(__cc_lsr_count_lt_8)
     ldi ph, hi(__cc_lsr_count_lt_8)
-    js ; lo(PRI) < 8
+    jc ; lo(PRI) < 8
     sub b, a
     ; b = count - 16
 
@@ -1191,13 +1194,13 @@ __cc_asl:
     jnz ; PRI >= 256
     ldi a, 15
     sub a, b ; 15 - lo(PRI)
-    js ; 15 < lo(PRI)
+    jc ; 15 < lo(PRI)
 
     ldi a, 8
     sub b, a ; lo(PRI) - 8
     ldi pl, lo(__cc_asl_count_lt_8)
     ldi ph, hi(__cc_asl_count_lt_8)
-    js ; lo(PRI) < 8
+    jc ; lo(PRI) < 8
     sub b, a
     ; b = count - 16
 
@@ -1364,8 +1367,446 @@ __cc_mul_added:
     ldi ph, hi(exit)
     jmp
 
-    .section data
-    .align 16 ; all internal data have same hi byte
+
+    ; SEC / PRI
+__cc_div:
+    mov a, pl
+    mov b, a
+    mov a, ph
+    ldi pl, lo(int_ret)
+    ldi ph, hi(int_ret)
+    st b
+    inc pl
+    st a
+
+    ; tmp & 1 = nominator was negative
+    ; tmp & 2 = denominator was negative
+    ; tmp := 0
+    ldi pl, lo(tmp)
+    ldi ph, hi(tmp)
+    mov a, 0
+    st a
+
+    ; test PRI
+    ldi pl, lo(__cc_r_pri + 1)
+    ld a
+    add a, 0
+    ldi pl, lo(__cc_div_neg_denom)
+    ldi ph, hi(__cc_div_neg_denom)
+    jc ; PRI < 0
+
+__cc_div_test_sec:
+    ; PRI >= 0
+    ; test SEC
+    ldi pl, lo(__cc_r_sec + 1)
+    ldi ph, hi(__cc_r_sec)
+    ld a
+    add a, 0
+    ldi pl, lo(__cc_div_neg_nom)
+    ldi ph, hi(__cc_div_neg_nom)
+    jc ; SEC < 0
+
+__cc_div_positive:
+    ; PRI >= 0
+    ; SEC >= 0
+    ; actually divide
+    ldi pl, lo(divide)
+    ldi ph, hi(divide)
+    jmp
+
+    ldi pl, lo(tmp)
+    ldi ph, hi(tmp)
+    ld a
+    shr a
+    st a
+    ldi pl, lo(__cc_div_result_nom_positive)
+    ldi ph, hi(__cc_div_result_nom_positive)
+    jnc
+
+    ; nominator was negative
+
+    ; Q = ~Q
+    ldi pl, lo(quotient)
+    ldi ph, hi(quotient)
+    ld a
+    not a
+    st a
+    inc pl
+    ld a
+    not a
+    st a
+
+    ; R == 0?
+    ldi pl, lo(remainder)
+    ld a
+    inc pl
+    ld b
+    or a, b
+    ldi pl, lo(__cc_div_d_minus_r)
+    ldi ph, hi(__cc_div_d_minus_r)
+    jnz
+
+    ; "return -Q, 0"
+    ; R == 0
+    ; Q += 1 - finish the negation
+    ldi pl, lo(quotient)
+    ldi ph, hi(quotient)
+    ld b
+    inc b
+    st b
+    ldi pl, lo(quotient + 1)
+    ld a
+    adc a, 0
+    st a
+
+    ldi pl, lo(__cc_div_result_nom_positive)
+    ldi ph, hi(__cc_div_result_nom_positive)
+    jmp
+
+__cc_div_d_minus_r:
+    ; "return -Q - 1, D - R"
+    ; Q is already that
+    ; R := PRI - R
+    ldi ph, hi(__cc_r_pri)
+    ldi pl, lo(__cc_r_pri)
+    ld b
+    ldi pl, lo(remainder)
+    ld a
+    sub b, a
+    st b
+    ldi pl, lo(__cc_r_pri + 1)
+    ld b
+    ldi pl, lo(remainder + 1)
+    ld a
+    sbb b, a
+    st b
+
+__cc_div_result_nom_positive:
+    ldi pl, lo(tmp)
+    ldi ph, hi(tmp)
+    ld a
+    shr a
+    ldi pl, lo(__cc_div_exit)
+    ldi ph, hi(__cc_div_exit)
+    jnc
+    ; denominator was negative
+    ; "return -Q, R"
+    ; Q := -Q
+    ldi pl, lo(quotient)
+    ldi ph, hi(quotient)
+    ld b
+    inc pl
+    ld a
+    not b
+    not a
+    inc b
+    adc a, 0
+    st a
+    dec pl
+    st b
+
+__cc_div_exit:
+    ; PRI := Q
+    ldi ph, hi(quotient)
+    ldi pl, lo(quotient)
+    ld a
+    inc pl
+    ld b
+    ldi pl, lo(__cc_r_pri)
+    st a
+    inc pl
+    st b
+    ; SEC := R
+    ldi pl, lo(remainder)
+    ld a
+    inc pl
+    ld b
+    ldi pl, lo(__cc_r_sec)
+    st a
+    inc pl
+    st b
+
+    ldi pl, lo(exit)
+    ldi ph, hi(exit)
+    jmp
+
+__cc_div_neg_denom:
+    ; PRI = -PRI
+    ldi ph, hi(__cc_r_pri)
+    ldi pl, lo(__cc_r_pri)
+    ld b
+    inc pl
+    ld a
+    not a
+    not b
+    inc b
+    adc a, 0
+    st a
+    dec pl
+    st b
+
+    ldi pl, lo(tmp)
+    ldi a, 0x02 ; negative denominator
+    st a
+
+    ldi pl, lo(__cc_div_test_sec)
+    ldi ph, hi(__cc_div_test_sec)
+    jmp
+
+__cc_div_neg_nom:
+    ; SEC = - SEC
+    ldi ph, hi(__cc_r_sec)
+    ldi pl, lo(__cc_r_sec)
+    ld b
+    inc pl
+    ld a
+    not a
+    not b
+    inc b
+    adc a, 0
+    st a
+    dec pl
+    st b
+
+    ldi pl, lo(tmp)
+    ld a
+    ldi b, 0x01 ; negative nominator
+    or a, b
+    st a
+
+    ldi pl, lo(__cc_div_positive)
+    ldi ph, hi(__cc_div_positive)
+    jmp
+
+__cc_udiv:
+    mov a, pl
+    mov b, a
+    mov a, ph
+    ldi pl, lo(int_ret)
+    ldi ph, hi(int_ret)
+    st b
+    inc pl
+    st a
+
+    ; actually divide
+    ldi pl, lo(divide)
+    ldi ph, hi(divide)
+    jmp
+
+    ldi pl, lo(__cc_div_exit)
+    ldi ph, hi(__cc_div_exit)
+    jmp
+
+    ; SEC / PRI
+    ; preserve PRI
+divide:
+    mov a, pl
+    mov b, a
+    mov a, ph
+    ldi pl, lo(div_ret)
+    ldi ph, hi(div_ret)
+    st b
+    inc pl
+    st a
+
+    ; D == 0?
+    ldi ph, hi(__cc_r_pri)
+    ldi pl, lo(__cc_r_pri)
+    ld a
+    inc pl
+    ld b
+    or a, b
+    ldi pl, lo(__cc_div_zero_trap)
+    ldi ph, hi(__cc_div_zero_trap)
+    jz ; D == 0
+
+    ; Q := 0
+    ldi ph, hi(quotient)
+    ldi pl, lo(quotient)
+    mov a, 0
+    st a
+    inc pl
+    st a
+    ; R := 0
+    ldi pl, lo(remainder)
+    st a
+    inc pl
+    st a
+
+    ; first half:
+
+    ; qbit := 0x80
+    ldi pl, lo(qbit)
+    ldi a, 0x80
+    st a
+
+divide_loop_1:
+    ; R := (R << 1) | msb(N)
+    ; N <<= 1
+    ldi ph, hi(remainder)
+    ldi pl, lo(remainder)
+    ld a
+    shl a
+    ldi pl, lo(__cc_r_sec + 1)
+    ld b
+    shl b
+    st b
+    adc a, 0
+    ldi pl, lo(remainder)
+    st a
+
+    ; R >= D?
+    ; hi(R) is still 0
+    ldi pl, lo(__cc_r_pri + 1)
+    ld a
+    add a, 0
+    ldi pl, lo(divide_loop_1_r_lt_d)
+    ldi ph, hi(divide_loop_1_r_lt_d)
+    jnz ; hi(D) != 0
+
+    ldi ph, hi(remainder)
+    ldi pl, lo(remainder)
+    ld a
+    ldi pl, lo(__cc_r_pri)
+    ld b
+    sub a, b ; lo(R) - lo(D)
+    ldi pl, lo(divide_loop_1_r_lt_d)
+    ldi ph, hi(divide_loop_1_r_lt_d)
+    jc ; lo(R) < lo(D)
+
+    ; R >= D
+    ; R -= D
+    ; hi(R) == 0, hi(D) == 0, overflow isn't possible
+    ldi ph, hi(__cc_r_pri)
+    ldi pl, lo(__cc_r_pri)
+    ld a
+    ldi pl, lo(remainder)
+    ld b
+    sub b, a
+    st b
+    ; Q |= qbit
+    ldi pl, lo(qbit)
+    ld a
+    ldi pl, lo(quotient + 1)
+    ld b
+    or b, a
+    st b
+
+divide_loop_1_r_lt_d:
+    ; qbit >>= 1
+    ldi ph, hi(qbit)
+    ldi pl, lo(qbit)
+    ld a
+    shr a
+    st a
+    ldi ph, hi(divide_loop_1)
+    ldi pl, lo(divide_loop_1)
+    jnc
+
+    ; second half:
+
+    ; qbit := 0x80
+    ldi ph, hi(qbit)
+    ldi pl, lo(qbit)
+    ldi a, 0x80
+    st a
+
+divide_loop_2:
+    ; R := (R << 1) | msb(N)
+    ; N <<= 1
+    ldi ph, hi(remainder)
+    ldi pl, lo(remainder)
+    ld b
+    inc pl
+    ld a
+    shl a
+    shl b
+    adc a, 0
+    st a
+    mov a, b
+    ldi pl, lo(__cc_r_sec)
+    ld b
+    shl b
+    st b
+    adc a, 0
+    ldi pl, lo(remainder)
+    st a
+
+    ; R >= D?
+    ldi pl, lo(__cc_r_pri + 1)
+    ld a
+    ldi pl, lo(remainder + 1)
+    ld b
+    sub b, a
+    ldi pl, lo(divide_loop_2_r_lt_d)
+    ldi ph, hi(divide_loop_2_r_lt_d)
+    jc ; hi(R) < hi(D)
+    ldi pl, lo(divide_loop_2_r_gt_d)
+    ldi ph, hi(divide_loop_2_r_gt_d)
+    jnz
+
+    ; hi(R) == hi(D)
+    ldi ph, hi(remainder)
+    ldi pl, lo(remainder)
+    ld a
+    ldi pl, lo(__cc_r_pri)
+    ld b
+    sub a, b ; lo(R) - lo(D)
+    ldi pl, lo(divide_loop_2_r_lt_d)
+    ldi ph, hi(divide_loop_2_r_lt_d)
+    jc ; lo(R) < lo(D)
+
+divide_loop_2_r_gt_d:
+    ; R >= D
+    ; R -= D
+    ldi ph, hi(__cc_r_pri)
+    ldi pl, lo(__cc_r_pri)
+    ld a
+    ldi pl, lo(remainder)
+    ld b
+    sub b, a
+    st b
+    ldi pl, lo(__cc_r_pri + 1)
+    ld a
+    ldi pl, lo(remainder + 1)
+    ld b
+    sbb b, a
+    st b
+    ; Q |= qbit
+    ldi pl, lo(qbit)
+    ld a
+    ldi pl, lo(quotient)
+    ld b
+    or b, a
+    st b
+
+divide_loop_2_r_lt_d:
+    ; qbit >>= 1
+    ldi ph, hi(qbit)
+    ldi pl, lo(qbit)
+    ld a
+    shr a
+    st a
+    ldi ph, hi(divide_loop_2)
+    ldi pl, lo(divide_loop_2)
+    jnc
+
+    ldi pl, lo(div_ret)
+    ldi ph, hi(div_ret)
+    ld a
+    inc pl
+    ld ph
+    mov pl, a
+    jmp
+
+
+__cc_div_zero_trap:
+    ldi pl, lo(__cc_div_zero_trap)
+    ldi ph, hi(__cc_div_zero_trap)
+    jmp
+
+    .section bss
+    .align 32 ; all internal data have same hi byte
 __cc_r_pri: res 2
 __cc_r_sec: res 2
 __cc_r_sp: res 2
@@ -1373,3 +1814,8 @@ __cc_r_ret: res 2
 
 int_ret: res 2
 tmp: res 2
+div_ret: res 2
+
+quotient: res 2
+remainder: res 2
+qbit: res 2
