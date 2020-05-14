@@ -200,10 +200,10 @@ dowhile() {
         generate_label (ws.case_test);
         test (ws.while_exit, FALSE);
         statement (NO);
+        stkp = gen_modify_stack (ws.stack_pointer);
         gen_jump (ws.case_test);
         generate_label (ws.while_exit);
         local_table_index = ws.symbol_idx;
-        stkp = gen_modify_stack (ws.stack_pointer);
         delwhile ();
 }
 
@@ -272,10 +272,10 @@ dofor() {
                 pws->incr_def = pws->case_test;
         generate_label (pws->body_tab);
         statement (NO);
+        stkp = gen_modify_stack (pws->stack_pointer);
         gen_jump (pws->incr_def);
         generate_label (pws->while_exit);
         local_table_index = pws->symbol_idx;
-        stkp = gen_modify_stack (pws->stack_pointer);
         delwhile ();
 }
 
